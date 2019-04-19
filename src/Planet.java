@@ -21,7 +21,4 @@ public class Planet extends SolarBody {
         super(_name,_radius,_scaling,_position,null,_rotationDuration,_orbitDuration);
     }
 
-    public Planet(String _name, float _radius, Vector3d _scaling, Vector3d _position,long _rotationDuration){
-        this(_name,_radius,_scaling,_position,_rotationDuration,null);
-    }
 }

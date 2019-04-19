@@ -66,6 +66,10 @@ public abstract class SolarBody {
         this.sphere = new Sphere(radius, primitiveFlags, 50,appearance);
     }
 
+    public SolarBody(String _name, float _radius, Vector3d _scaling, Vector3d _position,long _rotationDuration, Long _orbitDuration){
+        this(_name,_radius,_scaling,_position,null,_rotationDuration,_orbitDuration);
+    }
+
     /**
      * Create our appearance object using the texture based on the entityName.
      */
