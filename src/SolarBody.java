@@ -52,7 +52,7 @@ public abstract class SolarBody {
      * @param _position - translation for the transform group.
      * @param _rotationAngle - the angle to rotate at, can be null.
      * @param _rotationDuration - time taken for a entity to rotate within its own axis.
-     * @param _orbitDuration - time taken for entity to orbit another entity. (0 for entities that do not have an orbit).
+     * @param _orbitDuration - time taken for entity to orbit another entity. (null for entities that do not have an orbit).
      */
     public SolarBody(String _name, float _radius, Vector3d _scaling, Vector3d _position, Double _rotationAngle, long _rotationDuration, Long _orbitDuration) {
         this.bodyName = _name;
@@ -125,7 +125,14 @@ public abstract class SolarBody {
         Alpha alpha = new Alpha(-1, rotationDuration);
         axisRotator = new RotationInterpolator(alpha, axisTransformGroup, yAxis, 0, (float) (2 * Math.PI));
 
-        Point3d pos = new Point3d(position.getX(), position.getY(), position.getZ());
+        Point3d pos;
+
+
+        if(position == null){
+            pos = new Point3d(0, 0, 0);
+        } else {
+            pos = new Point3d(position.getX(), position.getY(), position.getZ());
+        }
         BoundingSphere bounds = new BoundingSphere(new BoundingSphere(pos, radius));
         axisRotator.setSchedulingBounds(bounds);
     }
