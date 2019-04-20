@@ -42,7 +42,7 @@ public abstract class SolarBody {
     protected Long orbitDuration;
 
     private static final int primitiveFlags = Primitive.GENERATE_NORMALS | Primitive.GENERATE_TEXTURE_COORDS;
-    private static final String texturePath = "src/resources//", extension = ".png";
+    private static final String texturePath = "resources//", extension = ".png";
 
     /**
      * Instantiate an instance of this class.
