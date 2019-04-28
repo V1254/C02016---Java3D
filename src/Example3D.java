@@ -15,9 +15,9 @@ import javax.media.j3d.ColoringAttributes;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Light;
 import javax.media.j3d.PointLight;
-import javax.media.j3d.PositionInterpolator;
 import javax.media.j3d.RotationInterpolator;
 import javax.media.j3d.Shape3D;
+import javax.media.j3d.Switch;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.media.j3d.TriangleArray;
@@ -82,21 +82,23 @@ public class Example3D extends JFrame {
         // initialise the solar entities.
         universe.initSolarEntities();
 
-    // =================================================================================================================
-    // ||                                             Lighting                                                        ||
-    // =================================================================================================================
+        // =================================================================================================================
+        // ||                                             Lighting                                                        ||
+        // =================================================================================================================
 
         // Fetch the sun and moon so we can add lighting.
         Star sun = (Star) universe.getSolarBodyByName("sun");
         Satellite moon = (Satellite) universe.getSolarBodyByName("moon");
+        Star altSun = universe.createAltSun();
 
         // saturn ring
         // way too lazy to do other rings.
-        Ring ring = new Ring(1f,.1f,"saturnRings");
+        Ring ring = new Ring(1f, .1f, "saturnRings");
 
 
         // Lighting from the sun, this will be #e0baa8.
-        mainTransformGroup.addChild(getLighting("sun"));
+        PointLight sunLight = getLighting("sun");
+        mainTransformGroup.addChild(sunLight);
 
         // add the Lighting from the moon, this will be set to white
         moon.getAxisTransformGroup().addChild(getLighting("moon"));
@@ -111,10 +113,33 @@ public class Example3D extends JFrame {
         // add to the spotlight to the tg.
         mainTransformGroup.addChild(spotLight);
 
+        // =================================================================================================================
+        // ||                                             Collision Setup                                                 ||
+        // =================================================================================================================
 
-    // =================================================================================================================
-    // ||                                             Node Connections                                                ||
-    // =================================================================================================================
+        // make the primitives collidable and add collision bounds.
+        sun.getSphere().setCollisionBounds(new BoundingSphere(new Point3d(0, 0, 0), sun.getRadius()));
+        sun.getSphere().setCollidable(true);
+        altSun.getSphere().setCollisionBounds(new BoundingSphere(new Point3d(0, 0, 0), altSun.getRadius()));
+
+        // add the two different suns to the switch.
+        Switch _switch = new Switch();
+        _switch.setCapability(Switch.ALLOW_SWITCH_WRITE);
+        _switch.addChild(sun.getSphere());
+        _switch.addChild(altSun.getSphere());
+        _switch.setWhichChild(0);
+
+        // create our collision behaviour.
+        CustomCollision collision = new CustomCollision(sun.getSphere(), altSun.getSphere(), _switch, sunLight, new BoundingSphere(new Point3d(0, 0, 0), Double.MAX_VALUE));
+
+        // add to the mainTransform.
+        mainTransformGroup.addChild(collision);
+        sun.getAxisTransformGroup().addChild(_switch);
+
+
+        // =================================================================================================================
+        // ||                                             Node Connections                                                ||
+        // =================================================================================================================
 
         // Transform group to handle the opposite orbit of Venus and Uranus.
         Transform3D retrogradeRotation = new Transform3D();
@@ -134,7 +159,6 @@ public class Example3D extends JFrame {
 
 
         mainTransformGroup.addChild(sun.getAxisTransformGroup());
-        sun.getAxisTransformGroup().addChild(sun.getSphere());
 
         // fetch the planets
         List<SolarBody> planets = universe.getSolarByType(Planet.class);
@@ -162,7 +186,7 @@ public class Example3D extends JFrame {
             planet.getAxisTransformGroup().addChild(planet.getSphere());
 
             // add rings if planet is saturn
-            if(planet.getBodyName().equalsIgnoreCase("saturn")){
+            if (planet.getBodyName().equalsIgnoreCase("saturn")) {
                 planet.getAxisTransformGroup().addChild(ring.getShape());
             }
         });
@@ -178,9 +202,9 @@ public class Example3D extends JFrame {
         });
 
         sun.getAxisTransformGroup().addChild(sun.getAxisRotator());
-    // =================================================================================================================
-    // ||                                              Mouse Behaviours                                               ||
-    // =================================================================================================================
+        // =================================================================================================================
+        // ||                                              Mouse Behaviours                                               ||
+        // =================================================================================================================
         BoundingSphere bounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 1000);
 
         // mouse behaviors
@@ -202,7 +226,14 @@ public class Example3D extends JFrame {
         sceneRoot.addChild(behavior3);
         behavior3.setSchedulingBounds(bounds);
 
+
+        // =================================================================================================================
+        // ||                                              Custom Shape                                               ||
+        // =================================================================================================================
+        // create a pyramid and add to main transform group.
+        // did this in external method because my ocd is kicking off with these long ass methods.
         mainTransformGroup.addChild(createPyramid());
+
 
         sceneRoot.compile();
         return sceneRoot;
@@ -238,64 +269,69 @@ public class Example3D extends JFrame {
 
 
     /**
-     * Creates a pink pyramid who's orbit line will intersect with the sun.
+     * Creates a pink pyramid which collides with the sun.
+     *
      * @return
      */
 
-    private BranchGroup createPyramid(){
+    private BranchGroup createPyramid() {
 
         BranchGroup root = new BranchGroup();
 
         // The translation/scaling for the pyramid
         Transform3D translation = new Transform3D();
-        translation.setScale(new Vector3d( .75f,.75f,.75f));
-        translation.setTranslation(new Vector3d(0,0,12));
-        TransformGroup translateGroup = new TransformGroup(translation);
+        translation.setScale(new Vector3d(.75f, .75f, .75f));
+        translation.setTranslation(new Vector3d(0, 0, 11.6));
+        TransformGroup translationScalingGroup = new TransformGroup(translation);
 
         // an orbit for the pyramid, which will collide with the sun.
-        Transform3D orbit = new Transform3D();
-        orbit.setTranslation(new Vector3d(12,0,0));
-        orbit.mul(new Transform3D());
-        TransformGroup orbitTranslation  = new TransformGroup(orbit);
+        Transform3D positionTransform = new Transform3D();
+        positionTransform.setTranslation(new Vector3d(12, 0, 0));
+        positionTransform.mul(new Transform3D());
+        TransformGroup positionTG = new TransformGroup(positionTransform);
 
         // rotating around a point.
         TransformGroup rotationCenter = new TransformGroup();
         rotationCenter.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-        RotationInterpolator orbitRotator = new RotationInterpolator(new Alpha(-1, 30000),
+        RotationInterpolator orbitRotator = new RotationInterpolator(new Alpha(-1, 3800),
                 rotationCenter, new Transform3D(), 0.0f, (float) Math.PI * 2);
-        orbitRotator.setSchedulingBounds(new BoundingSphere(new Point3d(0,0,0),1000));
+        orbitRotator.setSchedulingBounds(new BoundingSphere(new Point3d(0, 0, 0), 1000));
         rotationCenter.addChild(orbitRotator);
 
 
         // create our pyramid and apply a purple color to it.
         GeometryArray geometry = getArray();
         Appearance purpleApp = new Appearance();
-        Color3f color3f = new Color3f(Color.PINK);
+        Color3f color3f = new Color3f(Color.MAGENTA);
         ColoringAttributes ca = new ColoringAttributes();
         ca.setColor(color3f);
         purpleApp.setColoringAttributes(ca);
-        Shape3D customShape = new Shape3D(geometry,purpleApp);
+        Shape3D customShape = new Shape3D(geometry, purpleApp);
 
         // add to the shape group
-        translateGroup.addChild(customShape);
+        translationScalingGroup.addChild(customShape);
 
-        root.addChild(orbitTranslation);
-        orbitTranslation.addChild(rotationCenter);
-        rotationCenter.addChild(translateGroup);
+        root.addChild(positionTG);
+        positionTG.addChild(rotationCenter);
+        rotationCenter.addChild(translationScalingGroup);
 
 
         return root;
     }
 
 
-    // creates a GemoetryArray holding the co-ordinates for six triangles which compose to form a pyramid.
+    /**
+     * Geometry Array containing co-ordinates for 6 sides pyramid.
+     *
+     * @return
+     */
     private GeometryArray getArray() {
-        TriangleArray pyramidArray = new TriangleArray(18,TriangleArray.COORDINATES);
-        Point3f north = new Point3f(0.0f, 0.0f, -1.0f); // north
-        Point3f east = new Point3f(1.0f, 0.0f, 0.0f); // east
-        Point3f wwest = new Point3f(-1.0f, 0.0f, 0.0f); // west
-        Point3f south = new Point3f(0.0f, 0.0f, 1.0f); // south
-        Point3f top = new Point3f(0.0f, 0.9f, 0.0f); // top
+        TriangleArray pyramidArray = new TriangleArray(18, TriangleArray.COORDINATES);
+        Point3f north = new Point3f(0.0f, 0.0f, -1.0f);
+        Point3f east = new Point3f(1.0f, 0.0f, 0.0f);
+        Point3f west = new Point3f(-1.0f, 0.0f, 0.0f);
+        Point3f south = new Point3f(0.0f, 0.0f, 1.0f);
+        Point3f top = new Point3f(0.0f, 0.9f, 0.0f);
 
         // add the co-ordinates
         pyramidArray.setCoordinate(0, east);
@@ -305,9 +341,9 @@ public class Example3D extends JFrame {
 
         pyramidArray.setCoordinate(3, south);
         pyramidArray.setCoordinate(4, top);
-        pyramidArray.setCoordinate(5, wwest);
+        pyramidArray.setCoordinate(5, west);
 
-        pyramidArray.setCoordinate(6, wwest);
+        pyramidArray.setCoordinate(6, west);
         pyramidArray.setCoordinate(7, top);
         pyramidArray.setCoordinate(8, north);
 
@@ -317,9 +353,9 @@ public class Example3D extends JFrame {
 
         pyramidArray.setCoordinate(12, north);
         pyramidArray.setCoordinate(13, south);
-        pyramidArray.setCoordinate(14, wwest);
+        pyramidArray.setCoordinate(14, west);
 
-        pyramidArray.setCoordinate(15, wwest);
+        pyramidArray.setCoordinate(15, west);
         pyramidArray.setCoordinate(16, north);
         pyramidArray.setCoordinate(17, south);
 
@@ -328,8 +364,5 @@ public class Example3D extends JFrame {
         ng.generateNormals(geometryInfo);
         return geometryInfo.getGeometryArray();
     }
-
-    // TODO: add some collision stuff
-
 
 }
