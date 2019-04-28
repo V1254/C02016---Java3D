@@ -85,6 +85,11 @@ public class Example3D extends JFrame {
         Star sun = (Star) universe.getSolarBodyByName("sun");
         Satellite moon = (Satellite) universe.getSolarBodyByName("moon");
 
+        // saturn ring
+        // way too lazy to do other rings.
+        Ring ring = new Ring(1f,.1f,"saturnRings");
+
+
         // Lighting from the sun, this will be #e0baa8.
         mainTransformGroup.addChild(getLighting("sun"));
 
@@ -150,6 +155,11 @@ public class Example3D extends JFrame {
             planet.getOrbitTransformGroup().addChild(planet.getMainTransformGroup());
             planet.getMainTransformGroup().addChild(planet.getAxisTransformGroup());
             planet.getAxisTransformGroup().addChild(planet.getSphere());
+
+            // add rings if planet is saturn
+            if(planet.getBodyName().equalsIgnoreCase("saturn")){
+                planet.getAxisTransformGroup().addChild(ring.getShape());
+            }
         });
 
         // moon orbit around the earth.
