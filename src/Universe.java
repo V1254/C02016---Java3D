@@ -37,6 +37,10 @@ public class Universe {
         });
     }
 
+    /**
+     * Create a star instance with same values as original star except the texture applied to it will be pink.
+     * @return
+     */
     public Star  createAltSun(){
         Star sun = new Star("altSun", 1, 64800);
         sun.createScaledTransformGroup();
