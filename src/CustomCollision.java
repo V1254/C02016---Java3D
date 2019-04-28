@@ -39,7 +39,6 @@ public class CustomCollision extends Behavior {
     @Override
     public void initialize() {
         criterion = new WakeupCriterion[2];
-        System.out.println("This was called????");
         criterion[0] = new WakeupOnCollisionEntry(originalSun);
         criterion[1] = new WakeupOnCollisionEntry(pinkSun);
         wakeupOn(criterion[0]);

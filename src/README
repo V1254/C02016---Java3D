@@ -1,7 +1,7 @@
 ===============================================================================
 Under Libraries you will find all jars required to run the application.
 There are two scrips one for windows and the other for nix machines.
-    The scripts work as long as the j3dcore-ogl.dll(j3dcore-ogl.so) is in the PATH variable.
+    The scripts work as long as the j3dcore-ogl.dll(j3dcore-ogl.so) is in the PATH variable. (TODO: add dll maybe if time).
 
 Refer to this post compile errors: https://stackoverflow.com/questions/4098161/problems-with-java3d-lib-configuration
 
