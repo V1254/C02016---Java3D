@@ -1,21 +1,26 @@
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.utils.behaviors.mouse.MouseTranslate;
 import com.sun.j3d.utils.behaviors.mouse.MouseWheelZoom;
-import com.sun.j3d.utils.geometry.Cone;
-import com.sun.j3d.utils.geometry.Cylinder;
-import com.sun.j3d.utils.geometry.Sphere;
+import com.sun.j3d.utils.geometry.GeometryInfo;
+import com.sun.j3d.utils.geometry.NormalGenerator;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
 
+import javax.media.j3d.Alpha;
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.ColoringAttributes;
+import javax.media.j3d.GeometryArray;
 import javax.media.j3d.Light;
 import javax.media.j3d.PointLight;
+import javax.media.j3d.PositionInterpolator;
+import javax.media.j3d.RotationInterpolator;
+import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
+import javax.media.j3d.TriangleArray;
 import javax.swing.*;
 import javax.vecmath.Color3f;
 import javax.vecmath.Point3d;
@@ -71,7 +76,7 @@ public class Example3D extends JFrame {
         mainTransformGroup.setCapability(BranchGroup.ALLOW_CHILDREN_WRITE);
         mainTransformGroup.setCapability(BranchGroup.ALLOW_CHILDREN_READ);
 
-        // create our universe object.
+        // createPyramid our universe object.
         universe = new Universe();
 
         // initialise the solar entities.
@@ -197,6 +202,8 @@ public class Example3D extends JFrame {
         sceneRoot.addChild(behavior3);
         behavior3.setSchedulingBounds(bounds);
 
+        mainTransformGroup.addChild(createPyramid());
+
         sceneRoot.compile();
         return sceneRoot;
 
@@ -228,6 +235,101 @@ public class Example3D extends JFrame {
         }
         return light;
     }
+
+
+    /**
+     * Creates a pink pyramid who's orbit line will intersect with the sun.
+     * @return
+     */
+
+    private BranchGroup createPyramid(){
+
+        BranchGroup root = new BranchGroup();
+
+        // The translation/scaling for the pyramid
+        Transform3D translation = new Transform3D();
+        translation.setScale(new Vector3d( .75f,.75f,.75f));
+        translation.setTranslation(new Vector3d(0,0,12));
+        TransformGroup translateGroup = new TransformGroup(translation);
+
+        // an orbit for the pyramid, which will collide with the sun.
+        Transform3D orbit = new Transform3D();
+        orbit.setTranslation(new Vector3d(12,0,0));
+        orbit.mul(new Transform3D());
+        TransformGroup orbitTranslation  = new TransformGroup(orbit);
+
+        // rotating around a point.
+        TransformGroup rotationCenter = new TransformGroup();
+        rotationCenter.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+        RotationInterpolator orbitRotator = new RotationInterpolator(new Alpha(-1, 30000),
+                rotationCenter, new Transform3D(), 0.0f, (float) Math.PI * 2);
+        orbitRotator.setSchedulingBounds(new BoundingSphere(new Point3d(0,0,0),1000));
+        rotationCenter.addChild(orbitRotator);
+
+
+        // create our pyramid and apply a purple color to it.
+        GeometryArray geometry = getArray();
+        Appearance purpleApp = new Appearance();
+        Color3f color3f = new Color3f(Color.PINK);
+        ColoringAttributes ca = new ColoringAttributes();
+        ca.setColor(color3f);
+        purpleApp.setColoringAttributes(ca);
+        Shape3D customShape = new Shape3D(geometry,purpleApp);
+
+        // add to the shape group
+        translateGroup.addChild(customShape);
+
+        root.addChild(orbitTranslation);
+        orbitTranslation.addChild(rotationCenter);
+        rotationCenter.addChild(translateGroup);
+
+
+        return root;
+    }
+
+
+    // creates a GemoetryArray holding the co-ordinates for six triangles which compose to form a pyramid.
+    private GeometryArray getArray() {
+        TriangleArray pyramidArray = new TriangleArray(18,TriangleArray.COORDINATES);
+        Point3f north = new Point3f(0.0f, 0.0f, -1.0f); // north
+        Point3f east = new Point3f(1.0f, 0.0f, 0.0f); // east
+        Point3f wwest = new Point3f(-1.0f, 0.0f, 0.0f); // west
+        Point3f south = new Point3f(0.0f, 0.0f, 1.0f); // south
+        Point3f top = new Point3f(0.0f, 0.9f, 0.0f); // top
+
+        // add the co-ordinates
+        pyramidArray.setCoordinate(0, east);
+        pyramidArray.setCoordinate(1, top);
+        pyramidArray.setCoordinate(2, south);
+
+
+        pyramidArray.setCoordinate(3, south);
+        pyramidArray.setCoordinate(4, top);
+        pyramidArray.setCoordinate(5, wwest);
+
+        pyramidArray.setCoordinate(6, wwest);
+        pyramidArray.setCoordinate(7, top);
+        pyramidArray.setCoordinate(8, north);
+
+        pyramidArray.setCoordinate(9, north);
+        pyramidArray.setCoordinate(10, top);
+        pyramidArray.setCoordinate(11, east);
+
+        pyramidArray.setCoordinate(12, north);
+        pyramidArray.setCoordinate(13, south);
+        pyramidArray.setCoordinate(14, wwest);
+
+        pyramidArray.setCoordinate(15, wwest);
+        pyramidArray.setCoordinate(16, north);
+        pyramidArray.setCoordinate(17, south);
+
+        GeometryInfo geometryInfo = new GeometryInfo(pyramidArray);
+        NormalGenerator ng = new NormalGenerator();
+        ng.generateNormals(geometryInfo);
+        return geometryInfo.getGeometryArray();
+    }
+
+    // TODO: add some collision stuff
 
 
 }
