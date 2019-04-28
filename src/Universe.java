@@ -37,6 +37,14 @@ public class Universe {
         });
     }
 
+    public Star  createAltSun(){
+        Star sun = new Star("altSun", 1, 64800);
+        sun.createScaledTransformGroup();
+        sun.createRotationTransformGroup();
+        sun.createOrbitTransform();
+        return sun;
+    }
+
     public List<SolarBody> getBodies() {
         return bodies;
     }
