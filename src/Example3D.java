@@ -56,7 +56,7 @@ public class Example3D extends JFrame {
         T3D.rotY(Math.PI / 9);
         T3D.setTranslation(translate);
         cameraTG.setTransform(T3D);
-        setSize(512, 512);
+        setSize(549, 549);
         setVisible(true);
     }
 
